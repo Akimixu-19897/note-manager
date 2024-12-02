@@ -1,0 +1,35 @@
+body {
+  .el-menu {
+    --el-menu-text-color: var(--el-text-color-secondary);
+  }
+  /* page-header */
+  // .el-page-header {
+  //   .el-page-header__icon {
+  //     margin-right: 8px;
+  //   }
+  //   .el-page-header__header {
+  //     line-height: 28px;
+  //   }
+  //   .el-page-header__title,
+  //   .el-page-header__content {
+  //     font-size: 20px;
+  //     font-weight: 700;
+  //     color: var(--el-text-color-regular);
+  //   }
+  //   &[fixed] {
+  //     background-color: var(--el-bg-color-overlay);
+  //     position: sticky;
+  //     top: 0px;
+  //     left: 0px;
+  //     width: calc(100% + 16px);
+  //     padding: 16px;
+  //     box-sizing: border-box;
+  //     z-index: 999;
+  //     transform: translateY(-16px);
+  //     .el-page-header__title,
+  //     .el-divider {
+  //       display: none;
+  //     }
+  //   }
+  // }
+}

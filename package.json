@@ -1,0 +1,105 @@
+{
+  "name": "notes-manager",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test:unit": "vitest",
+    "lint": "eslint . --ext src/**/*.{vue,js,ts,tsx,jsx} build/**/*.{vue,js,ts,tsx,jsx} --fix --ignore-path .gitignore",
+    "format": "prettier --write src/",
+    "prepare": "husky",
+    "pre-commit": "lint-staged",
+    "postinstallmac": "git config core.hooksPath .husky && chmod 700 .husky/*",
+    "eslint": "eslint --cache --max-warnings 0  \"src/**/*.{vue,ts,js,tsx}\" --fix --ignore-path .eslintignore",
+    "commit": "git add . && git-cz"
+  },
+  "dependencies": {
+    "@element-plus/icons-vue": "^2.3.1",
+    "@icon-park/vue-next": "^1.4.2",
+    "@tinymce/tinymce-vue": "5",
+    "@vueuse/core": "^10.10.1",
+    "@vueuse/head": "^2.0.0",
+    "ace-builds": "^1.36.2",
+    "autoformat-commit": "^1.0.25",
+    "axios": "^1.7.2",
+    "dayjs": "^1.11.11",
+    "element-plus": "^2.8.7",
+    "idb": "^8.0.0",
+    "lodash-es": "^4.17.21",
+    "radash": "^12.1.0",
+    "rollup-plugin-external-globals": "^0.12.0",
+    "rollup-plugin-visualizer": "^5.12.0",
+    "uuid": "^11.0.3",
+    "vite-plugin-compression": "^0.5.1",
+    "vite-plugin-mkcert": "^1.17.6",
+    "vite-plugin-progress": "^0.0.7",
+    "vite-plugin-restart": "^0.4.1",
+    "vite-plugin-svg-icons": "^2.0.1",
+    "vite-plugin-vue-setup-extend": "^0.4.0",
+    "vue": "^3.5.13",
+    "vue-clipboard3": "^2.0.0",
+    "vue-i18n": "10.0.0-beta.1",
+    "vue-router": "^4.3.0",
+    "vue3-ace-editor": "^2.2.4"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^17.0.3",
+    "@commitlint/config-angular": "^17.0.3",
+    "@commitlint/cz-commitlint": "^17.0.3",
+    "@rushstack/eslint-patch": "^1.8.0",
+    "@tsconfig/node20": "^20.1.4",
+    "@types/jsdom": "^21.1.6",
+    "@vitejs/plugin-vue": "^5.0.4",
+    "@vitejs/plugin-vue-jsx": "^3.1.0",
+    "@vue/eslint-config-prettier": "^9.0.0",
+    "@vue/eslint-config-typescript": "^13.0.0",
+    "@vue/test-utils": "^2.4.5",
+    "@vue/tsconfig": "^0.5.1",
+    "autoprefixer": "^10.4.20",
+    "commitizen": "^4.2.4",
+    "cz-customizable": "^6.9.0",
+    "eslint": "^8.57.0",
+    "eslint-plugin-vue": "^9.23.0",
+    "husky": "^9.1.6",
+    "inquirer": "^8.0.0",
+    "jsdom": "^24.0.0",
+    "lint-staged": "^12.4.1",
+    "npm-run-all2": "^6.1.2",
+    "postcss": "^8.4.47",
+    "prettier": "^3.2.5",
+    "sass": "^1.79.3",
+    "sass-loader": "^16.0.3",
+    "tailwindcss": "^3.4.11",
+    "terser": "^5.32.0",
+    "typescript": "~5.4.0",
+    "unplugin-auto-import": "^0.17.6",
+    "unplugin-icons": "^0.19.0",
+    "unplugin-vue-components": "^0.27.0",
+    "vite": "^5.4.5",
+    "vite-plugin-vue-devtools": "^7.0.25",
+    "vitest": "^1.4.0",
+    "vue-tsc": "^2.0.11"
+  },
+  "lint-staged": {
+    "src/**/*.{js,ts,vue,jsx,tsx}": [
+      "npm run eslint"
+    ],
+    "src/**/*.{js,jsx,ts,tsx,md,html,css,lees,scss,sass}": "prettier --write",
+    "exclude": [
+      "dist/**",
+      "node_modules/**",
+      "public/**",
+      "commitlint.config.js"
+    ]
+  },
+  "config": {
+    "commitizen": {
+      "path": "@commitlint/cz-commitlint"
+    }
+  },
+  "volta": {
+    "node": "22.1.0"
+  }
+}
