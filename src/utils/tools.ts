@@ -11,39 +11,32 @@ export function handleTree(
   id: string,
   parentId: string,
   children?: string,
-  rootId?: number
+  rootId?: number | string
 ) {
-  id = id || 'id'
-  parentId = parentId || 'parentId'
-  children = children || 'children'
+  id = id || "id";
+  parentId = parentId || "parentId";
+  children = children || "children";
   rootId =
     rootId ||
     Math.min(
       ...data.map((item: { [x: string]: any }) => {
-        return item[parentId]
+        return item[parentId];
       })
-    )
-  0
+    );
+  0;
   //对源数据深度克隆
-  const cloneData = JSON.parse(JSON.stringify(data))
+  const cloneData = JSON.parse(JSON.stringify(data));
+
   //循环所有项
   const treeData = cloneData.filter((father) => {
     const branchArr = cloneData.filter((child) => {
       //返回每一项的子级数组
-      return father[id] === child[parentId]
-    })
-    branchArr.length > 0 ? (father.children = branchArr) : ''
+      return father[id] === child[parentId];
+    });
+    branchArr.length > 0 ? (father.children = branchArr) : "";
     //返回第一层
-    return father[parentId] === rootId
-  })
-  return treeData !== '' ? treeData : data
-}
+    return father[parentId] === rootId;
+  });
 
-// 生成临时ID,16位uuid
-export const generateTempId = () => {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-    const r = (Math.random() * 16) | 0
-    const v = c === 'x' ? r : (r & 0x3) | 0x8
-    return v.toString(16)
-  })
+  return treeData !== "" ? treeData : data;
 }

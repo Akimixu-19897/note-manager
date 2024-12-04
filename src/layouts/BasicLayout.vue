@@ -1,7 +1,5 @@
 <template>
-  <el-container
-    class="basic-layout"
-    direction="vertical">
+  <el-container class="basic-layout" direction="vertical">
     <!-- <HeaderView /> -->
     <el-container class="main-container">
       <!-- <el-aside>
@@ -21,7 +19,7 @@
 
 <style lang="scss" scoped>
 .basic-layout {
-  height: 100vh;
+  min-height: 100vh;
   background-color: var(--bg-100);
 }
 </style>

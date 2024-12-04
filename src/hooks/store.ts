@@ -27,18 +27,18 @@ import { v4 as uuidv4 } from "uuid"; // 从uuid库中导入v4并重命名为uuid
 
 // 定义TreeNode接口，表示树节点的数据结构
 interface TreeNode {
-  id: string; // 节点ID
+  id: string | number; // 节点ID
+  parentId: string | number; // 父节点ID
   createTime?: string; // 创建时间
   updateTime?: string; // 更新时间
   name: string; // 节点名称
-  children: TreeNode[]; // 子节点数组
 }
 
 // 定义TreeEdge接口，表示树边的数据结构
 interface TreeEdge {
-  id: string; // 边ID
-  parentId: string; // 父节点ID
-  childId: string; // 子节点ID
+  id: string | number; // 边ID
+  parentId: string | number; // 父节点ID
+  content: string; // 边内容
 }
 
 const dbName = "treeDB"; // 数据库名称
@@ -58,19 +58,34 @@ const dbPromise = openDB(dbName, 1, {
 export const useStore = () => {
   const treeData = ref<TreeNode[]>([]); // 定义treeData，初始值为空数组
   const edgeData = ref<TreeEdge[]>([]); // 定义edgeData，初始值为空数组
-
-  // 组件挂载时执行的函数
-  onMounted(async () => {
+  const canReturnData = ref<boolean>(true); // true表示可以返回数据，false表示不可以返回数据
+  // 加载数据的函数
+  const loadData = async () => {
+    canReturnData.value = false; // 设置不可以返回数据
     const db = await dbPromise; // 等待数据库打开
     const tx = db.transaction(storeName, "readonly"); // 开启只读事务
     const store = tx.objectStore(storeName); // 获取节点存储
     treeData.value = await store.getAll(); // 获取所有节点数据并赋值给treeData
 
     const edgeTx = db.transaction(edgeStoreName, "readonly"); // 开启只读事务
-    const edgeStore = edgeTx.objectStore(edgeStoreName); // ��取边存储
+    const edgeStore = edgeTx.objectStore(edgeStoreName); // 获取边存储
     edgeData.value = await edgeStore.getAll(); // 获取所有边数据并赋值给edgeData
-  });
 
+    canReturnData.value = true; // 设置可以返回数据
+  };
+
+  // 获取是否可以返回数据
+  const getCanReturnData = async () => {
+    while (!canReturnData.value) {
+      await new Promise((resolve) => setTimeout(resolve, 100)); // 等待100毫秒
+    }
+    return canReturnData.value;
+  };
+
+  // 组件挂载时执行的函数
+  onMounted(async () => {
+    await loadData(); // 如果数据尚未加载，则加载数据
+  });
   // 组件卸载时执行的函数
   onUnmounted(() => {
     dbPromise.then((db) => db.close()); // 关闭数据库连接
@@ -84,8 +99,8 @@ export const useStore = () => {
     node.id = uuidv4(); // 生成节点ID
     node.createTime = new Date().toLocaleString(); // 设置创建时间
     node.updateTime = new Date().toLocaleString(); // 设置更新时间
-    await store.add(node); // 添加节点到存储
-    treeData.value.push(node); // 将节点添加到treeData
+    await store.add(JSON.parse(JSON.stringify(node))); // 添加节点到存储
+    treeData.value.push(JSON.parse(JSON.stringify(node))); // 将节点添加到treeData
   };
 
   // 添加边的函数
@@ -94,8 +109,8 @@ export const useStore = () => {
     const tx = db.transaction(edgeStoreName, "readwrite"); // 开启读写事务
     const store = tx.objectStore(edgeStoreName); // 获取边存储
     edge.id = uuidv4(); // 生成边ID
-    await store.add(edge); // 添加边到存储
-    edgeData.value.push(edge); // 将边添加到edgeData
+    await store.add(JSON.parse(JSON.stringify(edge))); // 添加边到存储
+    edgeData.value.push(JSON.parse(JSON.stringify(edge))); // 将边添加到edgeData
   };
 
   // 更新节点的函数
@@ -104,7 +119,27 @@ export const useStore = () => {
     const tx = db.transaction(storeName, "readwrite"); // 开启读写事务
     const store = tx.objectStore(storeName); // 获取节点存储
     node.updateTime = new Date().toLocaleString(); // 更新节点的更新时间
-    await store.put(node); // 更新节点到存储
+    // 找到对应的节点
+    const oldNode = treeData.value.find((item) => item.id === node.id);
+    if (oldNode) {
+      // 更新节点
+      oldNode.name = node.name;
+      await store.put(JSON.parse(JSON.stringify(oldNode))); // 更新节点到存储
+    }
+  };
+
+  // 更新边的函数
+  const updateEdge = async (edge: TreeEdge) => {
+    const db = await dbPromise; // 等待数据库打开
+    const tx = db.transaction(edgeStoreName, "readwrite"); // 开启读写事务
+    const store = tx.objectStore(edgeStoreName); // 获取边存储
+    // 找到对应的边
+    const oldEdge = edgeData.value.find((item) => item.id === edge.id);
+    if (oldEdge) {
+      // 更新边
+      oldEdge.content = edge.content;
+      await store.put(JSON.parse(JSON.stringify(oldEdge))); // 更新边到存储
+    }
   };
 
   // 删除节点的函数
@@ -125,13 +160,24 @@ export const useStore = () => {
     edgeData.value = edgeData.value.filter((edge) => edge.id !== id); // 从edgeData中删除边
   };
 
+  // 获取treeData和edgeData
+  const getTreeData = async () => {
+    await getCanReturnData();
+    return treeData.value;
+  };
+  const getEdgeData = async () => {
+    await getCanReturnData();
+    return edgeData.value;
+  };
+
   // 返回所有定义的变量和函数
   return {
-    treeData,
-    edgeData,
+    getTreeData,
+    getEdgeData,
     addNode,
     addEdge,
     updateNode,
+    updateEdge,
     deleteNode,
     deleteEdge,
   };
