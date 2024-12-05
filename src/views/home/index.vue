@@ -33,9 +33,11 @@
             />
           </div>
           <div
-            :class="
-              activeID == item.id ? 'text-[#ffffff]' : 'text-[var(--text-200)]'
-            "
+            class="hover:text-[#ffffff]"
+            :class="{
+              'text-[#ffffff]': activeID == item.id,
+              'text-[var(--text-200)]': activeID != item.id,
+            }"
           >
             <span v-show="!item.isEdit">{{ item.name }}</span>
             <div v-show="item.isEdit">
@@ -64,12 +66,27 @@
         </div>
       </div>
       <!-- 新增的按钮 -->
-      <div
-        class="add_btn w-[60px] h-[60px] rounded-full bg-[#454545] hover:bg-[#0085ff] flex items-center justify-center fixed bottom-4 left-4 cursor-pointer"
-        @click="handleAdd"
+      <el-popover
+        placement="top-start"
+        :width="200"
+        trigger="hover"
+        content="新增分类，分类名称填写好后回车"
       >
-        <icon-park type="other" size="28" theme="outline" :fill="['#ffffff']" />
-      </div>
+        <template #reference>
+          <div
+            class="add_btn w-[60px] h-[60px] rounded-full bg-[#454545] hover:bg-[#0085ff] flex items-center justify-center fixed bottom-4 left-4 cursor-pointer"
+            @click="handleAdd"
+          >
+            <icon-park
+              type="other"
+              size="28"
+              theme="outline"
+              :fill="['#ffffff']"
+            />
+          </div>
+        </template>
+      </el-popover>
+
       <!-- 新增的输入框 -->
       <div v-if="increasing" class="flex items-center">
         <div class="w-[40px] h-[40px] flex items-center justify-center">
@@ -113,19 +130,34 @@
         />
         新建便签
       </div>
-      <div
-        v-if="activeChildren.length"
-        class="add_btn w-[60px] h-[60px] rounded-full bg-[#454545] hover:bg-[#0085ff] flex items-center justify-center fixed top-4 right-4 cursor-pointer z-10"
-        @click="handleAddNote"
+      <el-popover
+        placement="top-start"
+        :width="150"
+        trigger="hover"
+        content="新增便签"
       >
-        <icon-park type="doc-add" size="24" theme="outline" fill="#ffffff" />
-      </div>
+        <template #reference>
+          <div
+            v-if="activeChildren.length"
+            class="add_btn w-[60px] h-[60px] rounded-full bg-[#454545] hover:bg-[#0085ff] flex items-center justify-center fixed top-4 right-4 cursor-pointer z-10"
+            @click="handleAddNote"
+          >
+            <icon-park
+              type="doc-add"
+              size="24"
+              theme="outline"
+              fill="#ffffff"
+            />
+          </div>
+        </template>
+      </el-popover>
+
       <div
         v-for="(item, index) in activeChildren"
         :key="item.id"
-        class="h-[450px]"
+        class="h-[480px]"
       >
-        <div class="w-full h-full relative z-[9]">
+        <div class="w-full relative z-[9]">
           <Editor
             v-model="item.content"
             :api-key="editorKey"
@@ -133,7 +165,7 @@
           />
         </div>
         <div
-          class="h-10 bg-[#ffffff] relative top-[-10px] pt-[10px] pl-3 flex items-center rounded-md gap-3"
+          class="h-10 bg-[#ffffff] mt-[-10px] pt-[10px] pl-3 flex items-center rounded-md gap-3"
         >
           <icon-park
             class="cursor-pointer"
@@ -141,6 +173,7 @@
             size="20"
             theme="outline"
             fill="#1E1E1E"
+            title="保存"
             @click="saveEdgeData(item)"
           />
 
@@ -150,6 +183,7 @@
             size="20"
             theme="outline"
             fill="#1E1E1E"
+            title="删除"
             @click="deleteEdgeData(index)"
           />
         </div>
@@ -174,7 +208,7 @@ const editorConfig = {
   statusbar: false, // 状态栏
   language: "zh_CN", // 语言
   width: "100%", // 宽度
-  height: "100%", // 高度
+  height: "450px", // 高度
   // skin_url: "/src/views/home/myrandow/skins",
   // skin: "myrandow",
   // content_css: "myrandow",
@@ -211,10 +245,20 @@ const getAllData = async () => {
     "parentId",
     "children",
     "0"
-  ).sort(
-    (a, b) =>
-      new Date(a.createTime).getTime() - new Date(b.createTime).getTime()
-  );
+  )
+    .sort(
+      (a, b) =>
+        new Date(a.createTime).getTime() - new Date(b.createTime).getTime()
+    )
+    .map((item) => {
+      if (item.children && item.children.length > 0) {
+        item.children.sort(
+          (a, b) =>
+            new Date(a.createTime).getTime() - new Date(b.createTime).getTime()
+        );
+      }
+      return item;
+    });
 };
 
 const activeID = ref(1); // 当前选中的分类ID

@@ -42,6 +42,8 @@ interface TreeEdge {
   id: string | number; // 边ID
   parentId: string | number; // 父节点ID
   content: string; // 边内容
+  createTime?: string; // 创建时间
+  updateTime?: string; // 更新时间
 }
 
 const dbName = "treeDB"; // 数据库名称
@@ -113,6 +115,8 @@ export const useStore = () => {
     const tx = db.transaction(edgeStoreName, "readwrite"); // 开启读写事务
     const store = tx.objectStore(edgeStoreName); // 获取边存储
     edge.id = uuidv4(); // 生成边ID
+    edge.createTime = new Date().toLocaleString(); // 设置创建时间
+    edge.updateTime = new Date().toLocaleString(); // 设置更新时间
     await store.add(JSON.parse(JSON.stringify(edge))); // 添加边到存储
     edgeData.value.push(JSON.parse(JSON.stringify(edge))); // 将边添加到edgeData
     ElMessage.success("添加成功");
@@ -143,6 +147,7 @@ export const useStore = () => {
     const db = await dbPromise; // 等待数据库打开
     const tx = db.transaction(edgeStoreName, "readwrite"); // 开启读写事务
     const store = tx.objectStore(edgeStoreName); // 获取边存储
+    edge.updateTime = new Date().toLocaleString(); // 更新边的更新时间
     // 找到对应的边
     const oldEdge = edgeData.value.find((item) => item.id === edge.id);
     if (oldEdge) {

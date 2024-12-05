@@ -19,7 +19,8 @@
 
 <style lang="scss" scoped>
 .basic-layout {
-  min-height: 100vh;
+  height: 100vh;
+  overflow: auto;
   background-color: var(--bg-100);
 }
 </style>
