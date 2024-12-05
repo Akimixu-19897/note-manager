@@ -2,49 +2,75 @@
   <div class="container_box w-full h-full flex items-stretch gap-[20px]">
     <div class="classify_box w-[200px]">
       <div
-        class="classify_item py-2 text-center cursor-pointer flex items-center gap-[10px]"
+        class="classify_item py-2 text-center cursor-pointer flex items-center justify-between"
         v-for="item in noteTreeData"
         :key="item.id"
         :class="activeID == item.id ? ' text-[#ffffff]' : ''"
         @click="handleClick(item)"
       >
-        <div
-          class="w-[40px] h-[40px] flex items-center justify-center"
-          :class="
-            activeID == item.id
-              ? ' bg-[var(--primary-100)] text-[#ffffff] rounded-xl'
-              : ''
-          "
-        >
+        <div class="flex items-center gap-[10px]">
+          <div
+            class="w-[40px] h-[40px] flex items-center justify-center"
+            :class="
+              activeID == item.id
+                ? ' bg-[var(--primary-100)] text-[#ffffff] rounded-xl'
+                : ''
+            "
+          >
+            <icon-park
+              v-show="activeID != item.id"
+              type="category-management"
+              size="24"
+              theme="outline"
+              fill="#454545"
+            />
+            <icon-park
+              v-show="activeID == item.id"
+              type="category-management"
+              size="24"
+              theme="outline"
+              fill="#ffffff"
+            />
+          </div>
+          <div
+            :class="
+              activeID == item.id ? 'text-[#ffffff]' : 'text-[var(--text-200)]'
+            "
+          >
+            <span v-show="!item.isEdit">{{ item.name }}</span>
+            <div v-show="item.isEdit">
+              <el-input
+                v-model="item.name"
+                @keydown.enter="updateNodeData(item)"
+              ></el-input>
+            </div>
+          </div>
+        </div>
+        <div class="delete_icon gap-3" :class="item.isEdit ? 'noVisible' : ''">
           <icon-park
-            v-show="activeID != item.id"
-            type="category-management"
-            size="24"
-            theme="outline"
-            fill="#454545"
-          />
-          <icon-park
-            v-show="activeID == item.id"
-            type="category-management"
-            size="24"
+            type="edit"
+            size="12"
             theme="outline"
             fill="#ffffff"
+            @click.stop="editNodeData(item)"
+          />
+          <icon-park
+            type="close"
+            size="12"
+            theme="outline"
+            fill="#ffffff"
+            @click.stop="deleteNodeData(item.id)"
           />
         </div>
-        <div
-          :class="
-            activeID == item.id ? 'text-[#ffffff]' : 'text-[var(--text-200)]'
-          "
-        >
-          {{ item.name }}
-        </div>
       </div>
+      <!-- 新增的按钮 -->
       <div
         class="add_btn w-[60px] h-[60px] rounded-full bg-[#454545] hover:bg-[#0085ff] flex items-center justify-center fixed bottom-4 left-4 cursor-pointer"
         @click="handleAdd"
       >
         <icon-park type="other" size="28" theme="outline" :fill="['#ffffff']" />
       </div>
+      <!-- 新增的输入框 -->
       <div v-if="increasing" class="flex items-center">
         <div class="w-[40px] h-[40px] flex items-center justify-center">
           <icon-park
@@ -59,6 +85,15 @@
             v-model="addTreeData.name"
             @keydown.enter="saveTreeData"
           ></el-input>
+        </div>
+        <div>
+          <icon-park
+            type="close"
+            size="12"
+            theme="outline"
+            fill="#ffffff"
+            @click="((increasing = false), (addTreeData.name = ''))"
+          />
         </div>
       </div>
     </div>
@@ -85,8 +120,12 @@
       >
         <icon-park type="doc-add" size="24" theme="outline" fill="#ffffff" />
       </div>
-      <div v-for="item in activeChildren" :key="item.id" class="h-[450px]">
-        <div class="w-full h-full relative z-10">
+      <div
+        v-for="(item, index) in activeChildren"
+        :key="item.id"
+        class="h-[450px]"
+      >
+        <div class="w-full h-full relative z-[9]">
           <Editor
             v-model="item.content"
             :api-key="editorKey"
@@ -94,7 +133,7 @@
           />
         </div>
         <div
-          class="h-10 bg-[#ffffff] relative top-[-10px] z-0 pt-[10px] pl-3 flex items-center rounded-md"
+          class="h-10 bg-[#ffffff] relative top-[-10px] pt-[10px] pl-3 flex items-center rounded-md gap-3"
         >
           <icon-park
             class="cursor-pointer"
@@ -103,6 +142,15 @@
             theme="outline"
             fill="#1E1E1E"
             @click="saveEdgeData(item)"
+          />
+
+          <icon-park
+            class="cursor-pointer"
+            type="delete-themes"
+            size="20"
+            theme="outline"
+            fill="#1E1E1E"
+            @click="deleteEdgeData(index)"
           />
         </div>
       </div>
@@ -115,6 +163,9 @@ import Editor from "@tinymce/tinymce-vue";
 import { IconPark } from "@icon-park/vue-next/es/all";
 import { useStore } from "@/hooks/store";
 import { handleTree } from "@/utils/tools";
+import { ElMessageBox } from "element-plus";
+import "element-plus/theme-chalk/src/message-box.scss";
+import "element-plus/theme-chalk/src/button.scss";
 
 const editorKey = "e20g4kwvhjp4y0xwbf2ibe73qieph0k4y1um8xo5jl13j0f4";
 const editorConfig = {
@@ -160,6 +211,9 @@ const getAllData = async () => {
     "parentId",
     "children",
     "0"
+  ).sort(
+    (a, b) =>
+      new Date(a.createTime).getTime() - new Date(b.createTime).getTime()
   );
 };
 
@@ -175,7 +229,7 @@ const handleClick = (item) => {
 };
 
 const increasing = ref(false); // 是否正在添加分类
-const addTreeData = ref({ id: 0, name: "", parentId: 0 }); // 添加的分类数据
+const addTreeData = ref({ id: 0, name: "", parentId: "0" }); // 添加的分类数据
 // 点击添加分类
 const handleAdd = () => {
   increasing.value = true;
@@ -188,14 +242,39 @@ const saveTreeData = async () => {
     return;
   }
   await addNode(addTreeData.value);
-  classifyData.value = await getTreeData();
+  await getAllData();
   increasing.value = false;
+};
+
+// 编辑分类
+const editNodeData = (item) => {
+  item.isEdit = true;
+};
+
+// 更新分类
+const updateNodeData = async (item) => {
+  console.log("🚀这是updateNodeData的输出：", "更新分类");
+  await updateNode(item);
+  item.isEdit = false;
+};
+
+// 删除分类
+const deleteNodeData = (id) => {
+  ElMessageBox.confirm("此操作将永久删除该分类, 是否继续?", "提示", {
+    confirmButtonText: "确定",
+    cancelButtonText: "取消",
+    showClose: false,
+    appendTo: "body",
+    type: "warning",
+  }).then(async () => {
+    await deleteNode(id);
+    await getAllData();
+    handleClick(noteTreeData.value[0]);
+  });
 };
 
 // 点击添加便签
 const handleAddNote = () => {
-  // addEdge({ id: "0", parentId: activeID.value, content: "hahha" });
-
   activeChildren.value.push({ id: "0", parentId: activeID.value, content: "" });
 };
 
@@ -207,8 +286,19 @@ const saveEdgeData = async (item) => {
     await addEdge({ id: "0", parentId: activeID.value, content: data.content });
   } else {
     console.log("🚀这是data的输出：", data);
-
     await updateEdge(data);
+  }
+};
+
+// 删除便签
+const deleteEdgeData = async (index) => {
+  console.log("🚀这是deleteEdgeData的输出：", "删除便签");
+  // 首先判断是否是新建的便签
+  if (activeChildren.value[index].id === "0") {
+    activeChildren.value.splice(index, 1);
+  } else {
+    await deleteEdge(activeChildren.value[index].id);
+    activeChildren.value.splice(index, 1);
   }
 };
 
@@ -229,4 +319,18 @@ onMounted(async () => {
 });
 </script>
 
-<style lang="scss" scoped></style>
+<style lang="scss" scoped>
+.classify_item {
+  .delete_icon {
+    display: none;
+  }
+  &:hover {
+    .delete_icon {
+      display: flex;
+      &.noVisible {
+        display: none;
+      }
+    }
+  }
+}
+</style>

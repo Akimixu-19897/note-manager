@@ -24,6 +24,8 @@
 import { ref, onMounted, onUnmounted } from "vue"; // 从vue中导入ref, onMounted, onUnmounted
 import { openDB } from "idb"; // 从idb库中导入openDB函数
 import { v4 as uuidv4 } from "uuid"; // 从uuid库中导入v4并重命名为uuidv4
+import { ElMessage } from "element-plus";
+import "element-plus/theme-chalk/src/message.scss"; // 尝试导入 ElMessage 的单独样式
 
 // 定义TreeNode接口，表示树节点的数据结构
 interface TreeNode {
@@ -32,6 +34,7 @@ interface TreeNode {
   createTime?: string; // 创建时间
   updateTime?: string; // 更新时间
   name: string; // 节点名称
+  isEdit?: boolean; // 是否处于编辑状态
 }
 
 // 定义TreeEdge接口，表示树边的数据结构
@@ -101,6 +104,7 @@ export const useStore = () => {
     node.updateTime = new Date().toLocaleString(); // 设置更新时间
     await store.add(JSON.parse(JSON.stringify(node))); // 添加节点到存储
     treeData.value.push(JSON.parse(JSON.stringify(node))); // 将节点添加到treeData
+    ElMessage.success("添加成功");
   };
 
   // 添加边的函数
@@ -111,6 +115,7 @@ export const useStore = () => {
     edge.id = uuidv4(); // 生成边ID
     await store.add(JSON.parse(JSON.stringify(edge))); // 添加边到存储
     edgeData.value.push(JSON.parse(JSON.stringify(edge))); // 将边添加到edgeData
+    ElMessage.success("添加成功");
   };
 
   // 更新节点的函数
@@ -119,12 +124,17 @@ export const useStore = () => {
     const tx = db.transaction(storeName, "readwrite"); // 开启读写事务
     const store = tx.objectStore(storeName); // 获取节点存储
     node.updateTime = new Date().toLocaleString(); // 更新节点的更新时间
+    // 删除isEdit属性
+    if (node.isEdit) {
+      delete node.isEdit;
+    }
     // 找到对应的节点
     const oldNode = treeData.value.find((item) => item.id === node.id);
     if (oldNode) {
       // 更新节点
       oldNode.name = node.name;
       await store.put(JSON.parse(JSON.stringify(oldNode))); // 更新节点到存储
+      ElMessage.success("保存成功");
     }
   };
 
@@ -139,6 +149,7 @@ export const useStore = () => {
       // 更新边
       oldEdge.content = edge.content;
       await store.put(JSON.parse(JSON.stringify(oldEdge))); // 更新边到存储
+      ElMessage.success("保存成功");
     }
   };
 
@@ -149,6 +160,18 @@ export const useStore = () => {
     const store = tx.objectStore(storeName); // 获取节点存储
     await store.delete(id); // 从存储中删除节点
     treeData.value = treeData.value.filter((node) => node.id !== id); // 从treeData中删除节点
+    // 删除节点的同时删除边
+    const edgeTx = db.transaction(edgeStoreName, "readwrite"); // 开启读写事务
+    const edgeStore = edgeTx.objectStore(edgeStoreName); // 获取边存储
+    const edges = await edgeStore.getAll(); // 获取所有边
+    for (const edge of edges) {
+      if (edge.parentId === id) {
+        await edgeStore.delete(edge.id); // 从存储中删除边
+        edgeData.value = edgeData.value.filter((item) => item.id !== edge.id); // 从edgeData中删除边
+      }
+    }
+
+    ElMessage.success("删除成功");
   };
 
   // 删除边的函数
@@ -158,6 +181,7 @@ export const useStore = () => {
     const store = tx.objectStore(edgeStoreName); // 获取边存储
     await store.delete(id); // 从存储中删除边
     edgeData.value = edgeData.value.filter((edge) => edge.id !== id); // 从edgeData中删除边
+    ElMessage.success("删除成功");
   };
 
   // 获取treeData和edgeData
