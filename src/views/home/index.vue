@@ -158,7 +158,7 @@
         class="h-[480px]"
       >
         <div class="w-full relative z-[9]">
-          <Editor
+          <XEditor
             v-model="item.content"
             :api-key="editorKey"
             :init="editorConfig"
@@ -193,7 +193,6 @@
 </template>
 
 <script lang="ts" setup>
-import Editor from "@tinymce/tinymce-vue";
 import { IconPark } from "@icon-park/vue-next/es/all";
 import { useStore } from "@/hooks/store";
 import { handleTree } from "@/utils/tools";
