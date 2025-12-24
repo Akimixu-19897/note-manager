@@ -115,7 +115,7 @@
       </div>
     </div>
     <div class="line w-[1px] h-full bg-white"></div>
-    <div class="notes_box flex-1 grid grid-cols-3 gap-10">
+    <div class="notes_box flex-1 flex flex-wrap gap-10 content-start">
       <div
         v-if="!activeChildren.length"
         class="w-3/6 h-3/6 border-2 border-slate-300 flex items-center justify-center rounded flex-col gap-4 text-white text-2xl cursor-pointer"
@@ -155,17 +155,26 @@
       <div
         v-for="(item, index) in activeChildren"
         :key="item.id"
-        class="h-[480px]"
+        class="note-item relative"
+        :style="{
+          width: item.width || '400px',
+          height: item.height || '480px',
+        }"
       >
-        <div class="w-full relative z-[9]">
+        <div
+          class="w-full relative z-[9]"
+          :style="{ height: `calc(${item.height || '480px'} - 40px)` }"
+        >
           <XEditor
+            v-if="mounted"
             v-model="item.content"
             :api-key="editorKey"
-            :init="editorConfig"
+            :init="getEditorConfig(item.id, item.height)"
+            :disabled="false"
           />
         </div>
         <div
-          class="h-10 bg-[#ffffff] mt-[-10px] pt-[10px] pl-3 flex items-center rounded-md gap-3"
+          class="h-10 bg-[#ffffff] pt-[10px] pl-3 flex items-center rounded-md gap-3"
         >
           <icon-park
             class="cursor-pointer"
@@ -187,6 +196,21 @@
             @click="deleteEdgeData(index)"
           />
         </div>
+        <!-- 拖拽调整大小手柄 -->
+        <div
+          class="resize-handle"
+          @mousedown="startResize($event, item, index)"
+          title="拖拽调整大小"
+        >
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="#666">
+            <path
+              d="M15 1L1 15M15 6L6 15M15 11L11 15"
+              stroke="#666"
+              stroke-width="1.5"
+              stroke-linecap="round"
+            />
+          </svg>
+        </div>
       </div>
     </div>
   </div>
@@ -200,19 +224,40 @@ import { ElMessageBox } from "element-plus";
 import "element-plus/theme-chalk/src/message-box.scss";
 import "element-plus/theme-chalk/src/button.scss";
 
-const editorKey = "e20g4kwvhjp4y0xwbf2ibe73qieph0k4y1um8xo5jl13j0f4";
+const editorKey = "no-api-key"; // 使用本地文件不需要 API key
 const editorConfig = {
+  base_url: "/tinymce", // 使用 public 目录下的本地 TinyMCE
+  suffix: ".min", // 使用压缩版本
   menubar: false, // 菜单栏
   toolbar: false, // 工具栏
   statusbar: false, // 状态栏
   language: "zh_CN", // 语言
+  language_url: "/tinymce/langs/zh_CN.js", // 本地语言包
   width: "100%", // 宽度
   height: "450px", // 高度
-  // skin_url: "/src/views/home/myrandow/skins",
-  // skin: "myrandow",
-  // content_css: "myrandow",
   content_css: "dark",
+  promotion: false, // 禁用推广信息
+  branding: false, // 禁用品牌信息
+  resize: false, // 禁用调整大小
+  auto_focus: false, // 禁用自动聚焦
+  inline: false, // 禁用内联模式
 };
+
+// 存储编辑器实例
+const editorInstances = ref<Map<string | number, any>>(new Map());
+
+// 为每个编辑器实例生成配置，避免共享引用
+const getEditorConfig = (id: string | number, height?: string) => ({
+  ...editorConfig,
+  selector: `#editor-${id}`,
+  height: height ? `calc(${height} - 40px)` : "450px",
+  setup: (editor: any) => {
+    editor.on("init", () => {
+      // 存储编辑器实例
+      editorInstances.value.set(id, editor);
+    });
+  },
+});
 
 // 从indexDB中获取数据
 const {
@@ -262,6 +307,7 @@ const getAllData = async () => {
 
 const activeID = ref(1); // 当前选中的分类ID
 const activeChildren = ref<any[]>([]); // 子分类
+const mounted = ref(false); // 编辑器是否加载完成
 
 // 点击分类
 const handleClick = (item) => {
@@ -318,7 +364,64 @@ const deleteNodeData = (id) => {
 
 // 点击添加便签
 const handleAddNote = () => {
-  activeChildren.value.push({ id: "0", parentId: activeID.value, content: "" });
+  activeChildren.value.push({
+    id: "0",
+    parentId: activeID.value,
+    content: "",
+    width: "400px", // 默认宽度
+    height: "480px", // 默认高度
+  });
+};
+
+// 拖拽调整大小
+const startResize = (e: MouseEvent, item: any, index: number) => {
+  e.preventDefault();
+  e.stopPropagation();
+
+  // 从DOM元素获取实际宽高
+  const noteElement = (e.target as HTMLElement).closest(
+    ".note-item"
+  ) as HTMLElement;
+  if (!noteElement) return;
+
+  const startX = e.clientX;
+  const startY = e.clientY;
+  const startWidth = noteElement.offsetWidth;
+  const startHeight = noteElement.offsetHeight;
+
+  const onMouseMove = (moveEvent: MouseEvent) => {
+    const deltaX = moveEvent.clientX - startX;
+    const deltaY = moveEvent.clientY - startY;
+
+    // 计算新的宽高，设置最小值
+    const newWidth = Math.max(300, startWidth + deltaX);
+    const newHeight = Math.max(300, startHeight + deltaY);
+
+    item.width = `${newWidth}px`;
+    item.height = `${newHeight}px`;
+
+    // 动态调整编辑器高度
+    const editor = editorInstances.value.get(item.id);
+    if (editor && editor.editorContainer) {
+      const editorHeight = newHeight - 40; // 减去底部按钮栏高度
+      editor.editorContainer.style.height = `${editorHeight}px`;
+      // 调整 iframe 高度
+      const iframe = editor.iframeElement;
+      if (iframe) {
+        iframe.style.height = `${editorHeight}px`;
+      }
+    }
+  };
+
+  const onMouseUp = () => {
+    document.removeEventListener("mousemove", onMouseMove);
+    document.removeEventListener("mouseup", onMouseUp);
+    // 保存大小
+    saveEdgeData(item);
+  };
+
+  document.addEventListener("mousemove", onMouseMove);
+  document.addEventListener("mouseup", onMouseUp);
 };
 
 // 保存便签
@@ -359,6 +462,11 @@ onMounted(async () => {
     await getAllData();
     handleClick(noteTreeData.value[0]);
   }
+
+  // 延迟加载编辑器，避免阻塞页面渲染
+  nextTick(() => {
+    mounted.value = true;
+  });
 });
 </script>
 
@@ -374,6 +482,40 @@ onMounted(async () => {
         display: none;
       }
     }
+  }
+}
+
+.note-item {
+  position: relative;
+  min-width: 300px;
+  min-height: 300px;
+  transition: box-shadow 0.2s;
+
+  &:hover .resize-handle {
+    opacity: 1;
+  }
+}
+
+.resize-handle {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 20px;
+  height: 20px;
+  cursor: nwse-resize;
+  opacity: 0;
+  transition: opacity 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+
+  &:hover {
+    opacity: 1 !important;
+  }
+
+  svg {
+    pointer-events: none;
   }
 }
 </style>

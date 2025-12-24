@@ -101,5 +101,11 @@
   },
   "volta": {
     "node": "22.1.0"
-  }
+  },
+  "browserslist": [
+    "> 0.5%",
+    "last 2 versions",
+    "not dead",
+    "not IE 11"
+  ]
 }
