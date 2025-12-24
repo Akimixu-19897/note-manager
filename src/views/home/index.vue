@@ -374,7 +374,7 @@ const handleAddNote = () => {
 };
 
 // 拖拽调整大小
-const startResize = (e: MouseEvent, item: any, index: number) => {
+const startResize = (e: MouseEvent, item: any) => {
   e.preventDefault();
   e.stopPropagation();
 
