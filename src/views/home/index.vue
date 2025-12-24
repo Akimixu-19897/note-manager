@@ -199,7 +199,7 @@
         <!-- 拖拽调整大小手柄 -->
         <div
           class="resize-handle"
-          @mousedown="startResize($event, item, index)"
+          @mousedown="startResize($event, item)"
           title="拖拽调整大小"
         >
           <svg width="16" height="16" viewBox="0 0 16 16" fill="#666">
