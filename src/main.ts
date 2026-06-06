@@ -9,6 +9,10 @@ import "@icon-park/vue-next/styles/index.css";
 import "virtual:svg-icons-register";
 import Editor from "@tinymce/tinymce-vue";
 
+router.beforeEach(async () => {
+  await setI18n(localStorage.getItem("i18n") || "zh-CN");
+});
+
 async function initApp() {
   const app = createApp(App);
   app.use(i18n);
@@ -21,9 +25,5 @@ async function initApp() {
   }
   app.mount("#app");
 }
-initApp();
 
-router.beforeEach(async (_to, _from, next) => {
-  await setI18n(localStorage.getItem("i18n") || "zh-CN");
-  next();
-});
+initApp();

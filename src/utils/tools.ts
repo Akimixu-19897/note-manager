@@ -1,42 +1,36 @@
+type TreeItem = Record<string, any>;
+
 /**
- * 构造树型结构数据
- * @param {*} data 数据源
- * @param {*} id id字段 默认 'id'
- * @param {*} parentId 父节点字段 默认 'parentId'
- * @param {*} children 孩子节点字段 默认 'children'
- * @param {*} rootId 根Id 默认 0
+ * 构造树型结构数据。
+ * 只做浅拷贝，保留 IndexedDB 里已有字段，避免 JSON 深拷贝吞掉未来扩展字段类型。
  */
 export function handleTree(
-  data: { [x: string]: any }[],
-  id: string,
-  parentId: string,
-  children?: string,
-  rootId?: number | string
+  data: TreeItem[],
+  id = "id",
+  parentId = "parentId",
+  children = "children",
+  rootId: number | string = 0
 ) {
-  id = id || "id";
-  parentId = parentId || "parentId";
-  children = children || "children";
-  rootId =
-    rootId ||
-    Math.min(
-      ...data.map((item: { [x: string]: any }) => {
-        return item[parentId];
-      })
-    );
-  0;
-  //对源数据深度克隆
-  const cloneData = JSON.parse(JSON.stringify(data));
+  const itemMap = new Map<string | number, TreeItem>();
+  const treeData: TreeItem[] = [];
 
-  //循环所有项
-  const treeData = cloneData.filter((father) => {
-    const branchArr = cloneData.filter((child) => {
-      //返回每一项的子级数组
-      return father[id] === child[parentId];
-    });
-    branchArr.length > 0 ? (father.children = branchArr) : "";
-    //返回第一层
-    return father[parentId] === rootId;
-  });
+  for (const item of data) {
+    itemMap.set(item[id], { ...item });
+  }
 
-  return treeData !== "" ? treeData : data;
+  for (const item of itemMap.values()) {
+    const parent = itemMap.get(item[parentId]);
+
+    if (parent) {
+      const branch = (parent[children] ||= []);
+      branch.push(item);
+      continue;
+    }
+
+    if (item[parentId] === rootId) {
+      treeData.push(item);
+    }
+  }
+
+  return treeData.length > 0 ? treeData : data;
 }

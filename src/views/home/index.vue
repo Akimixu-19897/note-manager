@@ -218,11 +218,15 @@
 
 <script lang="ts" setup>
 import { IconPark } from "@icon-park/vue-next/es/all";
-import { useStore } from "@/hooks/store";
+import { useStore, type TreeEdge } from "@/hooks/store";
 import { handleTree } from "@/utils/tools";
 import { ElMessageBox } from "element-plus";
 import "element-plus/theme-chalk/src/message-box.scss";
 import "element-plus/theme-chalk/src/button.scss";
+
+defineOptions({
+  name: "HomeView",
+});
 
 const editorKey = "no-api-key"; // 使用本地文件不需要 API key
 const editorConfig = {
@@ -305,13 +309,17 @@ const getAllData = async () => {
     });
 };
 
-const activeID = ref(1); // 当前选中的分类ID
-const activeChildren = ref<any[]>([]); // 子分类
+const activeID = ref<string | number>(""); // 当前选中的分类ID
+const activeChildren = ref<TreeEdge[]>([]); // 当前分类下的便签
 const mounted = ref(false); // 编辑器是否加载完成
 
 // 点击分类
 const handleClick = (item) => {
-  console.log("🚀这是item的输出：", item);
+  if (!item) {
+    activeID.value = "";
+    activeChildren.value = [];
+    return;
+  }
 
   activeID.value = item.id;
   activeChildren.value = item?.children || [];
@@ -325,14 +333,18 @@ const handleAdd = () => {
 };
 // 回车保存分类
 const saveTreeData = async () => {
-  console.log("🚀这是saveTreeData的输出：", "回车保存分类");
-  if (!addTreeData.value.name) {
+  const name = addTreeData.value.name.trim();
+
+  if (!name) {
     increasing.value = false;
+    addTreeData.value.name = "";
     return;
   }
-  await addNode(addTreeData.value);
+
+  await addNode({ ...addTreeData.value, name });
   await getAllData();
   increasing.value = false;
+  addTreeData.value.name = "";
 };
 
 // 编辑分类
@@ -342,7 +354,13 @@ const editNodeData = (item) => {
 
 // 更新分类
 const updateNodeData = async (item) => {
-  console.log("🚀这是updateNodeData的输出：", "更新分类");
+  item.name = item.name.trim();
+
+  if (!item.name) {
+    item.isEdit = false;
+    return;
+  }
+
   await updateNode(item);
   item.isEdit = false;
 };
@@ -358,7 +376,19 @@ const deleteNodeData = (id) => {
   }).then(async () => {
     await deleteNode(id);
     await getAllData();
-    handleClick(noteTreeData.value[0]);
+
+    if (noteTreeData.value[0]) {
+      handleClick(noteTreeData.value[0]);
+      return;
+    }
+
+    const defaultNode = await addNode({
+      id: 1,
+      name: "默认分类",
+      parentId: "0",
+    });
+    await getAllData();
+    handleClick(noteTreeData.value.find((item) => item.id === defaultNode.id));
   });
 };
 
@@ -425,27 +455,35 @@ const startResize = (e: MouseEvent, item: any) => {
 };
 
 // 保存便签
-const saveEdgeData = async (item) => {
-  console.log("🚀这是saveEdgeData的输出：", "保存便签");
-  const data = item;
+const saveEdgeData = async (item: TreeEdge) => {
+  const data: TreeEdge = {
+    ...item,
+    content: item.content,
+    width: item.width,
+    height: item.height,
+  };
+
   if (data.id === "0") {
-    await addEdge({ id: "0", parentId: activeID.value, content: data.content });
-  } else {
-    console.log("🚀这是data的输出：", data);
-    await updateEdge(data);
+    const savedEdge = await addEdge({
+      ...data,
+      parentId: activeID.value,
+    });
+    Object.assign(item, savedEdge);
+    return;
   }
+
+  await updateEdge(data);
 };
 
 // 删除便签
 const deleteEdgeData = async (index) => {
-  console.log("🚀这是deleteEdgeData的输出：", "删除便签");
-  // 首先判断是否是新建的便签
-  if (activeChildren.value[index].id === "0") {
-    activeChildren.value.splice(index, 1);
-  } else {
-    await deleteEdge(activeChildren.value[index].id);
-    activeChildren.value.splice(index, 1);
+  const activeNote = activeChildren.value[index];
+
+  if (activeNote.id !== "0") {
+    await deleteEdge(activeNote.id);
   }
+
+  activeChildren.value.splice(index, 1);
 };
 
 onMounted(async () => {
