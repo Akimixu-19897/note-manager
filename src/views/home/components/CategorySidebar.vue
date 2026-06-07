@@ -261,6 +261,34 @@ const getNoteCount = (category: CategoryNode) =>
   flex: 1;
 }
 
+.category-sidebar__edit-input,
+.category-sidebar__new-input {
+  :deep(.el-input__wrapper),
+  :deep(.el-input__wrapper.is-focus) {
+    border-radius: 10px;
+    background-color: var(--surface-note);
+    box-shadow: 0 0 0 1px var(--border-subtle) inset !important;
+    outline: none;
+  }
+
+  :deep(.el-input__inner) {
+    color: var(--text-primary);
+    caret-color: var(--text-primary);
+    outline: none;
+
+    &:focus,
+    &:focus-visible {
+      outline: none;
+    }
+  }
+}
+
+.category-sidebar__edit-input:focus-within,
+.category-sidebar__new-input:focus-within,
+.category-sidebar__new-row:focus-within {
+  outline: none;
+}
+
 .category-sidebar__actions {
   display: flex;
   gap: 4px;

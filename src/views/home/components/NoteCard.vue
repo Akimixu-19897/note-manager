@@ -1,9 +1,13 @@
 <script setup lang="ts">
 import { IconPark } from "@icon-park/vue-next/es/all";
+import { ElMessage } from "element-plus";
 import NoteEditor from "./NoteEditor.vue";
 import { createResizeController } from "../composables/useResizableNote";
 import { toPlainText } from "../utils/noteContent";
+import { htmlToMarkdown } from "../utils/markdown";
 import type { NoteContentUpdate, NoteItem, ResizeDimensions } from "../types";
+import "element-plus/theme-chalk/src/message.scss";
+import "element-plus/theme-chalk/src/tooltip.scss";
 
 const props = defineProps<{
   note: NoteItem;
@@ -41,6 +45,18 @@ const updateContent = (update: NoteContentUpdate) => emit("update:content", prop
 const plainText = computed(() => toPlainText(props.note.content));
 const noteTitle = computed(() => plainText.value.slice(0, 18) || "未命名便签");
 const noteSummary = computed(() => plainText.value.slice(18, 96) || "点击卡片记录想法、命令或调试线索。");
+
+const copyNoteAsMarkdown = async () => {
+  const markdown = htmlToMarkdown(props.note.content) || plainText.value;
+
+  if (!markdown) {
+    ElMessage.warning("便签内容为空");
+    return;
+  }
+
+  await navigator.clipboard.writeText(markdown);
+  ElMessage.success("已复制 Markdown");
+};
 
 const openEditor = () => {
   isEditing.value = true;
@@ -108,29 +124,45 @@ watch(
     <footer class="note-card__footer">
       <span class="note-card__save-state" :class="saveStateClass">{{ saveStateText }}</span>
       <div class="note-card__actions">
-        <button
-          class="note-card__action"
-          type="button"
-          aria-label="保存便签"
-          @click.stop="emit('save', note)"
-        >
-          <icon-park type="save" size="18" theme="outline" fill="currentColor" />
-        </button>
-        <button
-          class="note-card__action note-card__action--danger"
-          type="button"
-          aria-label="删除便签"
-          @click.stop="emit('delete', note)"
-        >
-          <icon-park type="delete-themes" size="18" theme="outline" fill="currentColor" />
-        </button>
+        <el-tooltip content="保存便签" placement="top" :show-after="250">
+          <button
+            class="note-card__action"
+            type="button"
+            aria-label="保存便签"
+            @click.stop="emit('save', note)"
+          >
+            <icon-park type="save" size="18" theme="outline" fill="currentColor" />
+          </button>
+        </el-tooltip>
+        <el-tooltip content="复制为 Markdown" placement="top" :show-after="250">
+          <button
+            class="note-card__action"
+            type="button"
+            aria-label="复制便签为 Markdown"
+            @click.stop="copyNoteAsMarkdown"
+          >
+            <icon-park type="copy" size="18" theme="outline" fill="currentColor" />
+          </button>
+        </el-tooltip>
+        <el-tooltip content="删除便签" placement="top" :show-after="250">
+          <button
+            class="note-card__action note-card__action--danger"
+            type="button"
+            aria-label="删除便签"
+            @click.stop="emit('delete', note)"
+          >
+            <icon-park type="delete-themes" size="18" theme="outline" fill="currentColor" />
+          </button>
+        </el-tooltip>
       </div>
     </footer>
 
-    <button class="note-card__resize-handle" type="button" aria-label="调整便签大小" @click.stop
-      @pointerdown.stop="startResize" @pointermove="moveResize" @pointerup="endResize" @pointercancel="endResize">
-      <span aria-hidden="true"></span>
-    </button>
+    <el-tooltip content="拖拽调整大小" placement="top" :show-after="250">
+      <button class="note-card__resize-handle" type="button" aria-label="调整便签大小" @click.stop
+        @pointerdown.stop="startResize" @pointermove="moveResize" @pointerup="endResize" @pointercancel="endResize">
+        <span aria-hidden="true"></span>
+      </button>
+    </el-tooltip>
   </article>
 </template>
 

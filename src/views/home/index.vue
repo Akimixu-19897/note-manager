@@ -47,7 +47,11 @@ import { ElMessageBox } from "element-plus";
 import CategorySidebar from "./components/CategorySidebar.vue";
 import WorkspaceHeader from "./components/WorkspaceHeader.vue";
 import NoteGrid from "./components/NoteGrid.vue";
-import { filterCategories, filterNotesInCategory } from "./composables/useNoteSearch";
+import {
+  filterCategories,
+  filterNotesInCategory,
+  sortNotesByCreateTime,
+} from "./composables/useNoteSearch";
 import { useSaveShortcut } from "./composables/useSaveShortcut";
 import { emptyTiptapDocument } from "./utils/noteContent";
 import type { NoteContentUpdate, NoteItem, ResizeDimensions } from "./types";
@@ -143,7 +147,9 @@ const getAllData = async () => {
 
 const activeID = ref<string | number>(""); // 当前选中的分类ID
 const activeChildren = computed<TreeEdge[]>(() =>
-  noteData.value.filter((note) => note.parentId === activeID.value)
+  sortNotesByCreateTime(
+    noteData.value.filter((note) => note.parentId === activeID.value)
+  )
 );
 const filteredActiveChildren = computed(() =>
   filterNotesInCategory(
@@ -255,6 +261,7 @@ const deleteNodeData = (category) => {
 const handleAddNote = () => {
   noteSearchQuery.value = "";
   const clientId = createClientNoteId();
+  const now = new Date().toLocaleString();
 
   if (!activeID.value) {
     return;
@@ -269,6 +276,8 @@ const handleAddNote = () => {
     contentFormat: "tiptap-json",
     width: "300px",
     height: "168px",
+    createTime: now,
+    updateTime: now,
   });
 };
 

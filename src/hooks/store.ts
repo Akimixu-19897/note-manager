@@ -147,11 +147,12 @@ export const useStore = () => {
     const tx = db.transaction(edgeStoreName, "readwrite");
     const store = tx.objectStore(edgeStoreName);
     const persistableEdge = toPersistableEdge(edge);
+    const now = new Date().toLocaleString();
     const savedEdge: TreeEdge = {
       ...persistableEdge,
       id: uuidv4(),
-      createTime: new Date().toLocaleString(),
-      updateTime: new Date().toLocaleString(),
+      createTime: persistableEdge.createTime || now,
+      updateTime: now,
     };
 
     await store.add(savedEdge);

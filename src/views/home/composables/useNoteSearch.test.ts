@@ -10,8 +10,18 @@ const categories: CategoryNode[] = [
 ];
 
 const notes: NoteItem[] = [
-  { id: "note-1", parentId: "cat-1", content: "API 调试记录 curl token" },
-  { id: "note-2", parentId: "cat-1", content: "部署命令 pnpm build" },
+  {
+    id: "note-1",
+    parentId: "cat-1",
+    content: "API 调试记录 curl token",
+    createTime: "2026-06-06 10:00:00",
+  },
+  {
+    id: "note-2",
+    parentId: "cat-1",
+    content: "部署命令 pnpm build",
+    createTime: "2026-06-06 10:01:00",
+  },
   { id: "note-3", parentId: "cat-2", content: "Vue ref shallowRef markRaw" },
   { id: "note-4", parentId: "cat-4", content: "Release Checklist includes Smoke Test" },
 ];
@@ -43,5 +53,14 @@ describe("useNoteSearch", () => {
 
   it("returns all active category notes when note query is blank", () => {
     expect(filterNotesInCategory(notes, "cat-1", "")).toEqual([notes[0], notes[1]]);
+  });
+
+  it("keeps active category notes sorted by creation time after reload", () => {
+    const reloadedNotes = [notes[1], notes[0]];
+
+    expect(filterNotesInCategory(reloadedNotes, "cat-1", "")).toEqual([
+      notes[0],
+      notes[1],
+    ]);
   });
 });
