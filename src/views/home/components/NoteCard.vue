@@ -122,7 +122,12 @@ watch(
     </div>
 
     <footer class="note-card__footer">
-      <span class="note-card__save-state" :class="saveStateClass">{{ saveStateText }}</span>
+      <span class="note-card__status">
+        <span class="note-card__save-state" :class="saveStateClass">{{ saveStateText }}</span>
+        <span class="note-card__shortcut-hint" aria-label="可使用 Command 或 Control 加 S 保存">
+          ⌘/Ctrl S
+        </span>
+      </span>
       <div class="note-card__actions">
         <el-tooltip content="保存便签" placement="top" :show-after="250">
           <button
@@ -228,11 +233,30 @@ watch(
   background: var(--surface-workspace);
 }
 
+.note-card__status {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .note-card__save-state {
   min-width: 0;
   color: var(--text-muted);
   font-size: 12px;
   line-height: 1.2;
+  white-space: nowrap;
+}
+
+.note-card__shortcut-hint {
+  flex-shrink: 0;
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  padding: 1px 6px;
+  color: var(--text-muted);
+  font-size: 11px;
+  line-height: 1.4;
+  opacity: 0.72;
 }
 
 .note-card__save-state--dirty { color: var(--state-dirty); }
