@@ -1,267 +1,87 @@
 <template>
-  <div class="container_box w-full h-full flex items-stretch gap-[20px]">
-    <div class="classify_box w-[200px]">
-      <div
-        class="classify_item py-2 text-center cursor-pointer flex items-center justify-between"
-        v-for="item in noteTreeData"
-        :key="item.id"
-        :class="activeID == item.id ? ' text-[#ffffff]' : ''"
-        @click="handleClick(item)"
-      >
-        <div class="flex items-center gap-[10px]">
-          <div
-            class="w-[40px] h-[40px] flex items-center justify-center"
-            :class="
-              activeID == item.id
-                ? ' bg-[var(--primary-100)] text-[#ffffff] rounded-xl'
-                : ''
-            "
-          >
-            <icon-park
-              v-show="activeID != item.id"
-              type="category-management"
-              size="24"
-              theme="outline"
-              fill="#454545"
-            />
-            <icon-park
-              v-show="activeID == item.id"
-              type="category-management"
-              size="24"
-              theme="outline"
-              fill="#ffffff"
-            />
-          </div>
-          <div
-            class="hover:text-[#ffffff]"
-            :class="{
-              'text-[#ffffff]': activeID == item.id,
-              'text-[var(--text-200)]': activeID != item.id,
-            }"
-          >
-            <span v-show="!item.isEdit">{{ item.name }}</span>
-            <div v-show="item.isEdit">
-              <el-input
-                v-model="item.name"
-                @keydown.enter="updateNodeData(item)"
-              ></el-input>
-            </div>
-          </div>
-        </div>
-        <div class="delete_icon gap-3" :class="item.isEdit ? 'noVisible' : ''">
-          <icon-park
-            type="edit"
-            size="12"
-            theme="outline"
-            fill="#ffffff"
-            @click.stop="editNodeData(item)"
-          />
-          <icon-park
-            type="close"
-            size="12"
-            theme="outline"
-            fill="#ffffff"
-            @click.stop="deleteNodeData(item.id)"
-          />
-        </div>
-      </div>
-      <!-- 新增的按钮 -->
-      <el-popover
-        placement="top-start"
-        :width="200"
-        trigger="hover"
-        content="新增分类，分类名称填写好后回车"
-      >
-        <template #reference>
-          <div
-            class="add_btn w-[60px] h-[60px] rounded-full bg-[#454545] hover:bg-[#0085ff] flex items-center justify-center fixed bottom-4 left-4 cursor-pointer"
-            @click="handleAdd"
-          >
-            <icon-park
-              type="other"
-              size="28"
-              theme="outline"
-              :fill="['#ffffff']"
-            />
-          </div>
-        </template>
-      </el-popover>
-
-      <!-- 新增的输入框 -->
-      <div v-if="increasing" class="flex items-center">
-        <div class="w-[40px] h-[40px] flex items-center justify-center">
-          <icon-park
-            type="category-management"
-            size="24"
-            theme="outline"
-            fill="#ffffff"
-          />
-        </div>
-        <div>
-          <el-input
-            v-model="addTreeData.name"
-            @keydown.enter="saveTreeData"
-          ></el-input>
-        </div>
-        <div>
-          <icon-park
-            type="close"
-            size="12"
-            theme="outline"
-            fill="#ffffff"
-            @click="((increasing = false), (addTreeData.name = ''))"
-          />
-        </div>
-      </div>
-    </div>
-    <div class="line w-[1px] h-full bg-white"></div>
-    <div class="notes_box flex-1 flex flex-wrap gap-10 content-start">
-      <div
-        v-if="!activeChildren.length"
-        class="w-3/6 h-3/6 border-2 border-slate-300 flex items-center justify-center rounded flex-col gap-4 text-white text-2xl cursor-pointer"
-        @click="handleAddNote"
-      >
-        <icon-park
-          type="doc-add"
-          size="100"
-          theme="outline"
-          fill="#ffffff"
-          :strokeWidth="1"
-        />
-        新建便签
-      </div>
-      <el-popover
-        placement="top-start"
-        :width="150"
-        trigger="hover"
-        content="新增便签"
-      >
-        <template #reference>
-          <div
-            v-if="activeChildren.length"
-            class="add_btn w-[60px] h-[60px] rounded-full bg-[#454545] hover:bg-[#0085ff] flex items-center justify-center fixed top-4 right-4 cursor-pointer z-10"
-            @click="handleAddNote"
-          >
-            <icon-park
-              type="doc-add"
-              size="24"
-              theme="outline"
-              fill="#ffffff"
-            />
-          </div>
-        </template>
-      </el-popover>
-
-      <div
-        v-for="(item, index) in activeChildren"
-        :key="item.id"
-        class="note-item relative"
-        :style="{
-          width: item.width || '400px',
-          height: item.height || '480px',
-        }"
-      >
-        <div
-          class="w-full relative z-[9]"
-          :style="{ height: `calc(${item.height || '480px'} - 40px)` }"
-        >
-          <XEditor
-            v-if="mounted"
-            v-model="item.content"
-            :api-key="editorKey"
-            :init="getEditorConfig(item.id, item.height)"
-            :disabled="false"
-          />
-        </div>
-        <div
-          class="h-10 bg-[#ffffff] pt-[10px] pl-3 flex items-center rounded-md gap-3"
-        >
-          <icon-park
-            class="cursor-pointer"
-            type="save"
-            size="20"
-            theme="outline"
-            fill="#1E1E1E"
-            title="保存"
-            @click="saveEdgeData(item)"
-          />
-
-          <icon-park
-            class="cursor-pointer"
-            type="delete-themes"
-            size="20"
-            theme="outline"
-            fill="#1E1E1E"
-            title="删除"
-            @click="deleteEdgeData(index)"
-          />
-        </div>
-        <!-- 拖拽调整大小手柄 -->
-        <div
-          class="resize-handle"
-          @mousedown="startResize($event, item)"
-          title="拖拽调整大小"
-        >
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="#666">
-            <path
-              d="M15 1L1 15M15 6L6 15M15 11L11 15"
-              stroke="#666"
-              stroke-width="1.5"
-              stroke-linecap="round"
-            />
-          </svg>
-        </div>
-      </div>
-    </div>
+  <div class="notes-workbench">
+    <CategorySidebar
+      v-model:category-query="categoryQuery"
+      v-model:new-category-name="addTreeData.name"
+      :categories="filteredCategories"
+      :active-category-id="activeID"
+      :note-counts="categoryNoteCounts"
+      :is-creating-category="increasing"
+      @select-category="handleClick"
+      @start-create-category="handleAdd"
+      @cancel-create-category="cancelCreateCategory"
+      @save-category="saveTreeData"
+      @edit-category="editNodeData"
+      @delete-category="deleteNodeData"
+    />
+    <main class="notes-workbench__workspace" aria-label="当前分类便签">
+      <WorkspaceHeader
+        ref="workspaceHeaderRef"
+        v-model:search-query="noteSearchQuery"
+        :category-name="activeCategoryName"
+        :note-count="activeChildren.length"
+        :matched-count="filteredActiveChildren.length"
+        @clear-search="clearNoteSearch"
+        @create-note="handleAddNote"
+      />
+      <NoteGrid
+        :notes="filteredActiveChildren"
+        :total-count="activeChildren.length"
+        :has-active-category="Boolean(activeID)"
+        :is-searching="Boolean(noteSearchQuery.trim())"
+        @create-note="handleAddNote"
+        @clear-search="clearNoteSearch"
+        @save-note="saveEdgeData"
+        @delete-note="deleteEdgeByNote"
+        @resize-note="resizeEdgeData"
+        @update-note-content="updateNoteContent"
+      />
+    </main>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { IconPark } from "@icon-park/vue-next/es/all";
 import { useStore, type TreeEdge } from "@/hooks/store";
 import { handleTree } from "@/utils/tools";
 import { ElMessageBox } from "element-plus";
+import CategorySidebar from "./components/CategorySidebar.vue";
+import WorkspaceHeader from "./components/WorkspaceHeader.vue";
+import NoteGrid from "./components/NoteGrid.vue";
+import { filterCategories, filterNotesInCategory } from "./composables/useNoteSearch";
+import { useSaveShortcut } from "./composables/useSaveShortcut";
+import { emptyTiptapDocument } from "./utils/noteContent";
+import type { NoteContentUpdate, NoteItem, ResizeDimensions } from "./types";
 import "element-plus/theme-chalk/src/message-box.scss";
+import "element-plus/theme-chalk/src/overlay.scss";
 import "element-plus/theme-chalk/src/button.scss";
 
 defineOptions({
   name: "HomeView",
 });
 
-const editorKey = "no-api-key"; // 使用本地文件不需要 API key
-const editorConfig = {
-  base_url: "/tinymce", // 使用 public 目录下的本地 TinyMCE
-  suffix: ".min", // 使用压缩版本
-  menubar: false, // 菜单栏
-  toolbar: false, // 工具栏
-  statusbar: false, // 状态栏
-  language: "zh_CN", // 语言
-  language_url: "/tinymce/langs/zh_CN.js", // 本地语言包
-  width: "100%", // 宽度
-  height: "450px", // 高度
-  content_css: "dark",
-  promotion: false, // 禁用推广信息
-  branding: false, // 禁用品牌信息
-  resize: false, // 禁用调整大小
-  auto_focus: false, // 禁用自动聚焦
-  inline: false, // 禁用内联模式
+const toPersistedEdge = (item: TreeEdge): TreeEdge => {
+  const persistedEdge = { ...item };
+
+  delete persistedEdge.clientId;
+  delete persistedEdge.saveStatus;
+  delete persistedEdge.saveErrorMessage;
+  delete persistedEdge.lastSavedAt;
+
+  return persistedEdge;
 };
 
-// 存储编辑器实例
-const editorInstances = ref<Map<string | number, any>>(new Map());
+const markNoteSaveState = (
+  item: NoteItem,
+  saveStatus: NonNullable<NoteItem["saveStatus"]>,
+  saveErrorMessage = ""
+) => {
+  item.saveStatus = saveStatus;
+  item.saveErrorMessage = saveErrorMessage;
 
-// 为每个编辑器实例生成配置，避免共享引用
-const getEditorConfig = (id: string | number, height?: string) => ({
-  ...editorConfig,
-  selector: `#editor-${id}`,
-  height: height ? `calc(${height} - 40px)` : "450px",
-  setup: (editor: any) => {
-    editor.on("init", () => {
-      // 存储编辑器实例
-      editorInstances.value.set(id, editor);
-    });
-  },
-});
+  if (saveStatus === "saved") {
+    item.lastSavedAt = new Date().toLocaleTimeString();
+  }
+};
 
 // 从indexDB中获取数据
 const {
@@ -278,13 +98,25 @@ const {
 // 树节点数据,从treeData中获取，并保持响应式
 const classifyData: any = ref([]);
 // note的子数据，从edgeData中获取，并保持响应式
-const noteData: any = ref([]);
+const noteData = ref<TreeEdge[]>([]);
 // 树形结构数据
 const noteTreeData: any = ref([]);
+const categoryQuery = ref("");
+const noteSearchQuery = ref("");
+const filteredCategories = computed(() =>
+  filterCategories(noteTreeData.value, categoryQuery.value)
+);
+const categoryNoteCounts = computed<Record<string, number>>(() =>
+  noteData.value.reduce<Record<string, number>>((counts, note) => {
+    const key = String(note.parentId);
+    counts[key] = (counts[key] || 0) + 1;
+    return counts;
+  }, {})
+);
 
 const getAllData = async () => {
-  classifyData.value = await getTreeData();
-  noteData.value = await getEdgeData();
+  classifyData.value = [...(await getTreeData())];
+  noteData.value = [...(await getEdgeData())];
 
   // 将树节点数据和note数据进行处理，得到树形结构
   noteTreeData.value = handleTree(
@@ -310,19 +142,35 @@ const getAllData = async () => {
 };
 
 const activeID = ref<string | number>(""); // 当前选中的分类ID
-const activeChildren = ref<TreeEdge[]>([]); // 当前分类下的便签
-const mounted = ref(false); // 编辑器是否加载完成
+const activeChildren = computed<TreeEdge[]>(() =>
+  noteData.value.filter((note) => note.parentId === activeID.value)
+);
+const filteredActiveChildren = computed(() =>
+  filterNotesInCategory(
+    noteData.value,
+    activeID.value,
+    noteSearchQuery.value
+  )
+);
+const activeCategoryName = computed(
+  () =>
+    noteTreeData.value.find((item) => item.id == activeID.value)?.name ||
+    "未选择分类"
+);
+const workspaceHeaderRef = ref<InstanceType<typeof WorkspaceHeader> | null>(null);
+const isSaveableNote = (note: TreeEdge) =>
+  Boolean(note.clientId) ||
+  note.saveStatus === "dirty" ||
+  note.saveStatus === "failed";
 
 // 点击分类
 const handleClick = (item) => {
   if (!item) {
     activeID.value = "";
-    activeChildren.value = [];
     return;
   }
 
   activeID.value = item.id;
-  activeChildren.value = item?.children || [];
 };
 
 const increasing = ref(false); // 是否正在添加分类
@@ -330,6 +178,10 @@ const addTreeData = ref({ id: 0, name: "", parentId: "0" }); // 添加的分类�
 // 点击添加分类
 const handleAdd = () => {
   increasing.value = true;
+};
+const cancelCreateCategory = () => {
+  increasing.value = false;
+  addTreeData.value.name = "";
 };
 // 回车保存分类
 const saveTreeData = async () => {
@@ -349,6 +201,11 @@ const saveTreeData = async () => {
 
 // 编辑分类
 const editNodeData = (item) => {
+  if (item.isEdit) {
+    updateNodeData(item);
+    return;
+  }
+
   item.isEdit = true;
 };
 
@@ -366,7 +223,9 @@ const updateNodeData = async (item) => {
 };
 
 // 删除分类
-const deleteNodeData = (id) => {
+const deleteNodeData = (category) => {
+  const id =
+    typeof category === "object" && category !== null ? category.id : category;
   ElMessageBox.confirm("此操作将永久删除该分类, 是否继续?", "提示", {
     confirmButtonText: "确定",
     cancelButtonText: "取消",
@@ -394,99 +253,146 @@ const deleteNodeData = (id) => {
 
 // 点击添加便签
 const handleAddNote = () => {
-  activeChildren.value.push({
-    id: "0",
+  noteSearchQuery.value = "";
+  const clientId = createClientNoteId();
+
+  if (!activeID.value) {
+    return;
+  }
+
+  noteData.value.push({
+    id: clientId,
+    clientId,
     parentId: activeID.value,
     content: "",
-    width: "400px", // 默认宽度
-    height: "480px", // 默认高度
+    contentJson: emptyTiptapDocument(),
+    contentFormat: "tiptap-json",
+    width: "300px",
+    height: "168px",
   });
 };
 
-// 拖拽调整大小
-const startResize = (e: MouseEvent, item: any) => {
-  e.preventDefault();
-  e.stopPropagation();
+const createClientNoteId = () => `client-${crypto.randomUUID()}`;
 
-  // 从DOM元素获取实际宽高
-  const noteElement = (e.target as HTMLElement).closest(
-    ".note-item"
-  ) as HTMLElement;
-  if (!noteElement) return;
+const updateNoteContent = (item: TreeEdge, update: NoteContentUpdate) => {
+  item.content = update.html;
+  item.contentJson = update.json;
+  item.contentFormat = "tiptap-json";
+  markNoteSaveState(item, "dirty");
+};
 
-  const startX = e.clientX;
-  const startY = e.clientY;
-  const startWidth = noteElement.offsetWidth;
-  const startHeight = noteElement.offsetHeight;
+const resizeEdgeData = async (item: TreeEdge, dimensions: ResizeDimensions) => {
+  item.width = dimensions.width;
+  item.height = dimensions.height;
+  await saveEdgeData(item);
+};
 
-  const onMouseMove = (moveEvent: MouseEvent) => {
-    const deltaX = moveEvent.clientX - startX;
-    const deltaY = moveEvent.clientY - startY;
+const saveActiveNotes = async () => {
+  const saveableNotes = activeChildren.value.filter(isSaveableNote);
 
-    // 计算新的宽高，设置最小值
-    const newWidth = Math.max(300, startWidth + deltaX);
-    const newHeight = Math.max(300, startHeight + deltaY);
+  if (!saveableNotes.length) {
+    return;
+  }
 
-    item.width = `${newWidth}px`;
-    item.height = `${newHeight}px`;
-
-    // 动态调整编辑器高度
-    const editor = editorInstances.value.get(item.id);
-    if (editor && editor.editorContainer) {
-      const editorHeight = newHeight - 40; // 减去底部按钮栏高度
-      editor.editorContainer.style.height = `${editorHeight}px`;
-      // 调整 iframe 高度
-      const iframe = editor.iframeElement;
-      if (iframe) {
-        iframe.style.height = `${editorHeight}px`;
-      }
-    }
-  };
-
-  const onMouseUp = () => {
-    document.removeEventListener("mousemove", onMouseMove);
-    document.removeEventListener("mouseup", onMouseUp);
-    // 保存大小
-    saveEdgeData(item);
-  };
-
-  document.addEventListener("mousemove", onMouseMove);
-  document.addEventListener("mouseup", onMouseUp);
+  await Promise.all(saveableNotes.map((note) => saveEdgeData(note)));
 };
 
 // 保存便签
 const saveEdgeData = async (item: TreeEdge) => {
-  const data: TreeEdge = {
-    ...item,
-    content: item.content,
-    width: item.width,
-    height: item.height,
-  };
+  markNoteSaveState(item, "saving");
 
-  if (data.id === "0") {
-    const savedEdge = await addEdge({
-      ...data,
-      parentId: activeID.value,
-    });
-    Object.assign(item, savedEdge);
+  try {
+    const persistedData = toPersistedEdge(item);
+
+    if (item.clientId) {
+      const savedEdge = await addEdge({
+        ...persistedData,
+        parentId: activeID.value,
+      });
+      Object.assign(item, savedEdge);
+      delete item.clientId;
+      markNoteSaveState(item, "saved");
+      return;
+    }
+
+    await updateEdge(persistedData);
+    markNoteSaveState(item, "saved");
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "保存失败";
+    markNoteSaveState(item, "failed", message);
+    throw error;
+  }
+};
+
+const deleteEdgeData = async (item: TreeEdge) => {
+  if (!item.clientId) {
+    try {
+      await ElMessageBox.confirm("此操作将删除该便签，是否继续？", "删除便签", {
+        confirmButtonText: "删除",
+        cancelButtonText: "取消",
+        showClose: false,
+        appendTo: "body",
+        type: "warning",
+      });
+    } catch {
+      return;
+    }
+
+    await deleteEdge(item.id);
+  }
+
+  const index = noteData.value.findIndex(
+    (note) => note === item || (item.id !== "0" && note.id === item.id)
+  );
+
+  if (index !== -1) {
+    noteData.value.splice(index, 1);
+  }
+};
+
+const deleteEdgeByNote = async (note: TreeEdge) => {
+  await deleteEdgeData(note);
+};
+
+const clearNoteSearch = () => {
+  noteSearchQuery.value = "";
+};
+
+const isEditableShortcutTarget = (target: EventTarget | null) => {
+  if (!(target instanceof HTMLElement)) {
+    return false;
+  }
+
+  return Boolean(
+    target.closest('input, textarea, select, [contenteditable="true"]')
+  );
+};
+
+const { handleSaveShortcut } = useSaveShortcut({
+  onSave: saveActiveNotes,
+});
+
+const handleWorkspaceShortcut = (event: KeyboardEvent) => {
+  if (handleSaveShortcut(event)) {
     return;
   }
 
-  await updateEdge(data);
-};
-
-// 删除便签
-const deleteEdgeData = async (index) => {
-  const activeNote = activeChildren.value[index];
-
-  if (activeNote.id !== "0") {
-    await deleteEdge(activeNote.id);
+  if (
+    event.key !== "/" ||
+    event.metaKey ||
+    event.ctrlKey ||
+    event.altKey ||
+    isEditableShortcutTarget(event.target)
+  ) {
+    return;
   }
 
-  activeChildren.value.splice(index, 1);
+  event.preventDefault();
+  workspaceHeaderRef.value?.focusSearch();
 };
 
 onMounted(async () => {
+  window.addEventListener("keydown", handleWorkspaceShortcut, { capture: true });
   await getAllData();
 
   if (noteTreeData.value[0]) {
@@ -501,59 +407,35 @@ onMounted(async () => {
     handleClick(noteTreeData.value[0]);
   }
 
-  // 延迟加载编辑器，避免阻塞页面渲染
-  nextTick(() => {
-    mounted.value = true;
-  });
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener("keydown", handleWorkspaceShortcut, { capture: true });
 });
 </script>
 
 <style lang="scss" scoped>
-.classify_item {
-  .delete_icon {
-    display: none;
-  }
-  &:hover {
-    .delete_icon {
-      display: flex;
-      &.noVisible {
-        display: none;
-      }
-    }
-  }
+.notes-workbench {
+  min-height: 100%;
+  display: grid;
+  grid-template-columns: 248px minmax(0, 1fr);
+  gap: 14px;
+  padding: 16px;
+  color: var(--text-primary);
+  background: var(--surface-app);
 }
 
-.note-item {
-  position: relative;
-  min-width: 300px;
-  min-height: 300px;
-  transition: box-shadow 0.2s;
-
-  &:hover .resize-handle {
-    opacity: 1;
-  }
+.notes-workbench__workspace {
+  min-width: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 12px;
 }
 
-.resize-handle {
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  width: 20px;
-  height: 20px;
-  cursor: nwse-resize;
-  opacity: 0;
-  transition: opacity 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 10;
-
-  &:hover {
-    opacity: 1 !important;
-  }
-
-  svg {
-    pointer-events: none;
+@media (max-width: 760px) {
+  .notes-workbench {
+    grid-template-columns: 1fr;
+    padding: max(12px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom));
   }
 }
 </style>

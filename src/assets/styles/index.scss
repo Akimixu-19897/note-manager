@@ -14,6 +14,22 @@
   --bg-100: #1E1E1E;
   --bg-200: #2d2d2d;
   --bg-300: #454545;
+  --surface-app: #0f1724;
+  --surface-sidebar: #0a111c;
+  --surface-workspace: #111a29;
+  --surface-note: #182235;
+  --surface-note-hover: #1d2a3d;
+  --border-subtle: #233044;
+  --border-strong: #32445d;
+  --text-primary: #eef5ff;
+  --text-secondary: #b4c3d6;
+  --text-muted: #7f91a8;
+  --action-primary: #4f9cff;
+  --action-primary-hover: #76b4ff;
+  --action-danger: #ff6b7a;
+  --state-dirty: #d7a25a;
+  --state-saved: #7ccf91;
+  --focus-ring: #8fc5ff;
 }
 
 body {
@@ -60,6 +76,11 @@ body {
   }
 }
 
-.el-overlay {
-  position: relative;
+.notes-workbench {
+  button:focus-visible,
+  input:focus-visible,
+  [tabindex]:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+  }
 }

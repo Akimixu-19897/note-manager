@@ -25,6 +25,7 @@ import { ref } from "vue";
 import { openDB } from "idb";
 import { v4 as uuidv4 } from "uuid";
 import { ElMessage } from "element-plus";
+import type { JSONContent } from "@tiptap/vue-3";
 import "element-plus/theme-chalk/src/message.scss";
 
 // 定义TreeNode接口，表示树节点的数据结构
@@ -40,13 +41,43 @@ interface TreeNode {
 // 定义TreeEdge接口，表示树边的数据结构
 export interface TreeEdge {
   id: string | number;
+  clientId?: string;
   parentId: string | number;
   content: string;
+  contentJson?: JSONContent;
+  contentFormat?: "html" | "tiptap-json";
   width?: string;
   height?: string;
   createTime?: string;
   updateTime?: string;
+  saveStatus?: "idle" | "dirty" | "saving" | "saved" | "failed";
+  saveErrorMessage?: string;
+  lastSavedAt?: string;
 }
+
+const cloneJsonContent = (contentJson?: JSONContent): JSONContent | undefined => {
+  if (!contentJson) {
+    return undefined;
+  }
+
+  return JSON.parse(JSON.stringify(contentJson)) as JSONContent;
+};
+
+const toPersistableEdge = (edge: TreeEdge): TreeEdge => {
+  const persistableEdge = { ...edge };
+  const clonedContentJson = cloneJsonContent(edge.contentJson);
+
+  delete persistableEdge.clientId;
+  delete persistableEdge.saveStatus;
+  delete persistableEdge.saveErrorMessage;
+  delete persistableEdge.lastSavedAt;
+  delete persistableEdge.contentJson;
+
+  return {
+    ...persistableEdge,
+    ...(clonedContentJson ? { contentJson: clonedContentJson } : {}),
+  };
+};
 
 const dbName = "treeDB"; // 数据库名称
 const storeName = "treeStore"; // 节点存储名称
@@ -115,8 +146,9 @@ export const useStore = () => {
     const db = await dbPromise;
     const tx = db.transaction(edgeStoreName, "readwrite");
     const store = tx.objectStore(edgeStoreName);
+    const persistableEdge = toPersistableEdge(edge);
     const savedEdge: TreeEdge = {
-      ...edge,
+      ...persistableEdge,
       id: uuidv4(),
       createTime: new Date().toLocaleString(),
       updateTime: new Date().toLocaleString(),
@@ -165,11 +197,15 @@ export const useStore = () => {
     const db = await dbPromise;
     const tx = db.transaction(edgeStoreName, "readwrite");
     const store = tx.objectStore(edgeStoreName);
+    const persistableOldEdge = toPersistableEdge(oldEdge);
+    const persistableEdge = toPersistableEdge(edge);
     const savedEdge: TreeEdge = {
-      ...oldEdge,
-      content: edge.content,
-      width: edge.width,
-      height: edge.height,
+      ...persistableOldEdge,
+      content: persistableEdge.content,
+      contentJson: persistableEdge.contentJson,
+      contentFormat: persistableEdge.contentFormat,
+      width: persistableEdge.width,
+      height: persistableEdge.height,
       updateTime: new Date().toLocaleString(),
     };
 

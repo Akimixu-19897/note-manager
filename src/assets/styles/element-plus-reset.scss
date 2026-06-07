@@ -33,3 +33,7 @@ body {
   //   }
   // }
 }
+
+.el-overlay.is-message-box {
+  z-index: 30000 !important;
+}

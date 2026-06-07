@@ -1,10 +1,10 @@
 body {
   height: 100%;
-  background-color: #222f3e;
-  color: #fff;
+  background-color: #182235;
+  color: #eef5ff;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
     Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
-  line-height: 1.4;
+  line-height: 1.5;
   margin: 1rem;
 }
 /* 美化滚动条 */
@@ -27,7 +27,7 @@ body {
 }
 
 a {
-  color: #4099ff;
+  color: #76b4ff;
 }
 table {
   border-collapse: collapse;

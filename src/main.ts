@@ -7,7 +7,6 @@ import "@/assets/styles/tailwindcss.css";
 import "@icon-park/vue-next/styles/index.css";
 // 支持SVG
 import "virtual:svg-icons-register";
-import Editor from "@tinymce/tinymce-vue";
 
 router.beforeEach(async () => {
   await setI18n(localStorage.getItem("i18n") || "zh-CN");
@@ -17,7 +16,6 @@ async function initApp() {
   const app = createApp(App);
   app.use(i18n);
   app.use(router);
-  app.component("XEditor", Editor);
 
   // 注册icons
   for (const [key, component] of Object.entries({ ...ElementPlusIconsVue })) {

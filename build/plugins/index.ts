@@ -26,11 +26,16 @@ export function createVitePlugins(viteEnv, isBuild: boolean) {
     vueJsx(),
     // setup语法糖组件名支持
     vueSetupExtend(),
-    // 提供https证书
-    VitePluginCertificate({
-      source: "coding",
-    }),
   ];
+
+  if (!isBuild && process.env.NODE_ENV !== "test" && process.env.npm_lifecycle_event !== "preview") {
+    // 提供开发服务器 https 证书；测试环境不能触发系统证书安装。
+    vitePlugins.push(
+      VitePluginCertificate({
+        source: "coding",
+      })
+    );
+  }
 
   // 自动按需引入组件
   vitePlugins.push(AutoRegistryComponents());
